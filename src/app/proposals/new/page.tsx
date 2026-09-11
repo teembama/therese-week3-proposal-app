@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface FormErrors {
   [key: string]: string;
@@ -211,6 +212,9 @@ export default function NewProposalPage() {
   if (mode === "choose") {
     return (
       <div className="max-w-4xl">
+        <Link href="/" className="text-sm font-semibold text-[var(--accent)] hover:underline mb-4 inline-block">
+        ← All Proposals
+        </Link>
         <h1 className="text-2xl font-semibold mb-2">New Proposal</h1>
         <p className="text-sm text-[var(--muted)] mb-8">
           How would you like to start?
