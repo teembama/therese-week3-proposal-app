@@ -127,6 +127,24 @@ export default function ProposalDetailPage() {
           <ApprovalActions id={id} onComplete={fetchProposal} />
         )}
 
+        {/* Cancel approval request — salesperson can pull it back */}
+        {status === "pending_approval" && (
+          <button
+            onClick={async () => {
+              if (!confirm("Cancel approval request? This will move the proposal back to draft.")) return;
+              const res = await fetch(`/api/proposals/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "draft" }),
+              });
+              if (res.ok) fetchProposal();
+            }}
+            className="w-full py-2 text-sm border border-[var(--surface-border)] rounded-lg hover:bg-gray-50"
+          >
+            Cancel Approval Request
+          </button>
+        )}
+
         {/* Delivery actions — only when approved */}
         {canDeliver && (
           <DeliveryActions id={id} proposal={proposal} onComplete={fetchProposal} />
@@ -153,7 +171,6 @@ export default function ProposalDetailPage() {
 
 /* ---- Sub-components ---- */
 
-// Collapsible panel to edit the original intake fields
 function EditDetailsPanel({ proposal, onSave }: { proposal: Proposal; onSave: () => void }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -184,7 +201,6 @@ function EditDetailsPanel({ proposal, onSave }: { proposal: Proposal; onSave: ()
     setError(null);
     setSuccess(false);
     try {
-      // Use a dedicated endpoint to update intake fields
       const res = await fetch(`/api/proposals/${proposal.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -581,6 +597,9 @@ function ApprovalActions({ id, onComplete }: { id: string; onComplete: () => voi
       setError("Approver name is required");
       return;
     }
+    if (!confirm("Approve this proposal? Once approved, it can be exported and sent to the client.")) {
+      return;
+    }
     setActing(true);
     setError(null);
     try {
@@ -602,6 +621,9 @@ function ApprovalActions({ id, onComplete }: { id: string; onComplete: () => voi
   async function handleReject() {
     if (!rejectionReason.trim()) {
       setError("Rejection reason is required");
+      return;
+    }
+    if (!confirm("Reject this proposal? The salesperson will need to revise and resubmit.")) {
       return;
     }
     setActing(true);
@@ -718,6 +740,21 @@ function DeliveryActions({ id, proposal, onComplete }: {
         Approved{proposal.approver_name ? ` by ${proposal.approver_name}` : ""}
         {proposal.approved_at ? ` on ${new Date(proposal.approved_at).toLocaleDateString()}` : ""}
       </p>
+
+      <button
+        onClick={async () => {
+          if (!confirm("Withdraw approval? This will move the proposal back to draft.")) return;
+          const res = await fetch(`/api/proposals/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "draft" }),
+          });
+          if (res.ok) onComplete();
+        }}
+        className="w-full py-2 text-sm border border-[var(--danger)] text-[var(--danger)] rounded-lg hover:bg-red-50"
+      >
+        Withdraw Approval
+      </button>
 
       <div className="flex gap-3">
         <a
