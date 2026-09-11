@@ -74,7 +74,7 @@ export default function ProposalPreviewPage() {
       {/* Proposal document */}
       <div className="max-w-3xl mx-auto proposal-document">
         <div className="mb-10 pb-6 border-b-2 border-[var(--foreground)]">
-          <h1 className="text-3xl font-semibold mb-2">Proposal for {proposal.client_name}</h1>
+          <h1 className="text-3xl font-semibold mb-2">Proposal for {proposal.company_name}</h1>
           <p className="text-[var(--muted)]">
             Prepared by {proposal.salesperson_name} · Koya Talent
           </p>

@@ -133,7 +133,7 @@ function buildProposalHtml(proposal: ProposalRecord, sections: GeneratedSections
     <strong>Print this page to save as PDF</strong> — use Ctrl/Cmd+P, then select "Save as PDF"
   </div>
   <div class="header">
-    <h1>Proposal for ${proposal.client_name}</h1>
+    <h1>Proposal for ${proposal.company_name}</h1>
     <div class="meta">
       Prepared by ${proposal.salesperson_name} · Koya Talent<br>
       Date: ${proposal.date_of_call}
