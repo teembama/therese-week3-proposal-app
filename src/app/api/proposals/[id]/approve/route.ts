@@ -21,7 +21,7 @@ export async function POST(
     // Fetch current status
     const { data: proposal, error: fetchError } = await supabase
       .from('proposals')
-      .select('status, generated_sections')
+      .select('status, generated_sections, salesperson_name')
       .eq('id', id)
       .single();
 
