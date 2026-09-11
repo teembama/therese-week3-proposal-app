@@ -32,6 +32,14 @@ export default function ProposalPreviewPage() {
 
   useEffect(() => { fetchProposal(); }, [fetchProposal]);
 
+  // Set page title for PDF filename
+   useEffect(() => {
+    if (proposal?.company_name) {
+      document.title = `${proposal.company_name} Proposal`;
+      return () => { document.title = "Koya Proposals"; };
+    }
+  }, [proposal?.company_name]);
+
   if (loading) return <div className="text-center py-20 text-[var(--muted)]">Loading preview...</div>;
   if (error || !proposal) {
     return (
@@ -53,12 +61,6 @@ export default function ProposalPreviewPage() {
 
   const sections = proposal.generated_sections as GeneratedSections;
 
-    // Set page title for PDF filename
-  useEffect(() => {
-    document.title = `${proposal.company_name} Proposal`;
-    return () => { document.title = "Koya Proposals"; };
-  }, [proposal.company_name]);
-  
   return (
     <div>
       {/* Toolbar — hidden when printing */}
