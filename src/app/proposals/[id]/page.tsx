@@ -694,6 +694,9 @@ function DeliveryActions({ id, proposal, onComplete }: {
   const [sendResult, setSendResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
   async function handleSend() {
+    if (!confirm(`Send this proposal to ${proposal.client_email}? This cannot be undone.`)) {
+      return;
+    }
     setSending(true);
     setSendResult(null);
     try {
