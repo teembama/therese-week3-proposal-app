@@ -45,6 +45,14 @@ export async function POST(
       );
     }
 
+    // Approver must be different from the salesperson
+    if (body.approver_name.trim().toLowerCase() === proposal.salesperson_name.trim().toLowerCase()) {
+      return NextResponse.json(
+        { error: 'The approver cannot be the same person as the salesperson. A different team member must review and approve.' },
+        { status: 400 }
+      );
+    }
+
     const { data, error: updateError } = await supabase
       .from('proposals')
       .update({

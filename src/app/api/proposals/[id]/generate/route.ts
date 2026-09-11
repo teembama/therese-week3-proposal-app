@@ -33,6 +33,15 @@ export async function POST(
       );
     }
 
+    // Regeneration limit — 3 AI generations max per proposal
+    const regenCount = proposal.regen_count || 0;
+    if (regenCount >= 3) {
+      return NextResponse.json(
+        { error: 'Regeneration limit reached (3/3). You can still edit sections manually to save AI costs.' },
+        { status: 429 }
+      );
+    }
+
     // Build intake object from the stored row
     const intake: ProposalIntake = {
       client_name: proposal.client_name,
@@ -67,12 +76,13 @@ export async function POST(
       );
     }
 
-    // Save the generated sections to the proposal
+    // Save the generated sections and increment regen count
     const { error: updateError } = await supabase
       .from('proposals')
       .update({
         generated_sections: sections,
-        status: 'draft', // reset to draft if it was rejected
+        status: 'draft',
+        regen_count: regenCount + 1,
       })
       .eq('id', id);
 

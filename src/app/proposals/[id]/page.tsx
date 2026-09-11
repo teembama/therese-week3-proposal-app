@@ -87,6 +87,13 @@ export default function ProposalDetailPage() {
         <EditDetailsPanel proposal={proposal} onSave={fetchProposal} />
       )}
 
+            {/* Regen counter */}
+      {proposal.generated_sections && canEdit && (
+        <p className="text-xs text-[var(--muted)]">
+          AI regenerations: {proposal.regen_count || 0}/3 used
+        </p>
+      )}
+
       {/* Generate button — if no sections yet */}
       {!proposal.generated_sections && canEdit && (
         <GenerateButton id={id} onComplete={fetchProposal} />

@@ -48,6 +48,15 @@ export async function POST(
       );
     }
 
+    // Regeneration limit — shared with full regeneration, 3 total
+    const regenCount = proposal.regen_count || 0;
+    if (regenCount >= 3) {
+      return NextResponse.json(
+        { error: 'Regeneration limit reached (3/3). You can still edit this section manually to save AI costs.' },
+        { status: 429 }
+      );
+    }
+
     // Parse optional instruction
     let instruction: string | undefined;
     try {
@@ -98,7 +107,7 @@ export async function POST(
 
     const { error: updateError } = await supabase
       .from('proposals')
-      .update({ generated_sections: updatedSections })
+      .update({ generated_sections: updatedSections, regen_count: regenCount + 1 })
       .eq('id', id);
 
     if (updateError) {

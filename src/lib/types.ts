@@ -57,6 +57,7 @@ export interface Proposal extends ProposalIntake {
   email_error: string | null;
   created_at: string;
   updated_at: string;
+  regen_count: number;
 }
 
 // Status display metadata

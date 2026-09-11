@@ -55,10 +55,16 @@ export async function POST(
 
     try {
       const { error: sendError } = await resend.emails.send({
-        from: 'Koya Talent <onboarding@resend.dev>', // Resend free tier uses their domain
+        from: 'Koya Talent <onboarding@resend.dev>',
         to: [proposal.client_email],
         subject: `Proposal for ${proposal.company_name}`,
-        html: buildEmailHtml(proposal, proposalUrl),
+        html: buildEmailHtml({
+          client_name: proposal.client_name,
+          company_name: proposal.company_name,
+          salesperson_name: proposal.salesperson_name,
+          date_of_call: proposal.date_of_call,
+          generated_sections: proposal.generated_sections as Record<string, string>,
+        }),
       });
 
       if (sendError) {
@@ -120,24 +126,48 @@ interface ProposalEmailData {
   client_name: string;
   company_name: string;
   salesperson_name: string;
+  date_of_call: string;
+  generated_sections: Record<string, string>;
 }
 
-function buildEmailHtml(proposal: ProposalEmailData, proposalUrl: string): string {
+const EMAIL_SECTION_LABELS: Record<string, string> = {
+  introduction: 'Introduction',
+  proposed_solution: 'Proposed Solution',
+  deliverables: 'Deliverables',
+  timeline: 'Timeline',
+  pricing: 'Pricing',
+  next_steps: 'Next Steps',
+};
+
+function buildEmailHtml(proposal: ProposalEmailData): string {
+  const sections = ['introduction', 'proposed_solution', 'deliverables', 'timeline', 'pricing', 'next_steps']
+    .map(key => {
+      const content = proposal.generated_sections[key] || '';
+      const paragraphs = content.split('\n\n').map(p => `<p style="margin: 0 0 12px 0; line-height: 1.6;">${p.replace(/\n/g, '<br>')}</p>`).join('');
+      return `
+        <div style="margin-bottom: 24px;">
+          <h2 style="font-size: 16px; color: #1a3a5c; margin: 0 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">${EMAIL_SECTION_LABELS[key]}</h2>
+          ${paragraphs}
+        </div>`;
+    }).join('');
+
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a;">
-      <p>Hi ${proposal.client_name},</p>
+    <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 650px; margin: 0 auto; color: #1a1a1a; font-size: 14px;">
+      <p style="margin-bottom: 16px;">Hi ${proposal.client_name},</p>
       
-      <p>Thanks again for taking the time to speak with us. Based on our conversation, we have put together a customized proposal for your review.</p>
+      <p style="margin-bottom: 24px;">Thanks again for taking the time to speak with us. Based on our conversation, we have put together a customized proposal for your review.</p>
       
-      <p>You can view the proposal here: <a href="${proposalUrl}" style="color: #2563eb;">${proposalUrl}</a></p>
+      <div style="border-top: 2px solid #1a3a5c; padding-top: 20px; margin-top: 20px;">
+        <h1 style="font-size: 22px; color: #1a3a5c; margin: 0 0 4px 0;">Proposal for ${proposal.company_name}</h1>
+        <p style="color: #6b7280; font-size: 13px; margin: 0 0 24px 0;">Prepared by ${proposal.salesperson_name} · Koya Talent · ${proposal.date_of_call}</p>
+        
+        ${sections}
+      </div>
       
-      <p>This document outlines the project scope, timeline, pricing details, and recommended approach.</p>
-      
-      <p>If you have any questions or would like to make adjustments, feel free to reach out. We are happy to iterate with you.</p>
-      
-      <p>Looking forward to hearing your thoughts.</p>
-      
-      <p>Best regards,<br>${proposal.salesperson_name}<br>Koya Talent</p>
+      <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+        <p style="margin-bottom: 12px;">If you have any questions or would like to make adjustments, feel free to reach out. We are happy to iterate with you.</p>
+        <p style="margin-bottom: 0;">Best regards,<br>${proposal.salesperson_name}<br>Koya Talent</p>
+      </div>
     </div>
   `;
 }
