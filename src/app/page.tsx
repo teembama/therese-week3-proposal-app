@@ -40,12 +40,38 @@ export default function HomePage() {
     );
   }
 
+  // Count proposals by status
+  const counts = proposals.reduce<Record<string, number>>((acc, p) => {
+    acc[p.status] = (acc[p.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const stats = [
+    { label: "Total", count: proposals.length, color: "var(--foreground)" },
+    { label: "Draft", count: counts.draft || 0, color: STATUS_CONFIG.draft.color },
+    { label: "Pending", count: counts.pending_approval || 0, color: STATUS_CONFIG.pending_approval.color },
+    { label: "Approved", count: counts.approved || 0, color: STATUS_CONFIG.approved.color },
+    { label: "Sent", count: counts.sent || 0, color: STATUS_CONFIG.sent.color },
+    { label: "Rejected", count: counts.rejected || 0, color: STATUS_CONFIG.rejected.color },
+  ];
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">All Proposals</h1>
-        <p className="text-sm text-[var(--muted)]">{proposals.length} total</p>
       </div>
+
+      {/* Stats row */}
+      {proposals.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+          {stats.map((s) => (
+            <div key={s.label} className="card p-3 text-center">
+              <div className="text-xl font-semibold" style={{ color: s.color }}>{s.count}</div>
+              <div className="text-xs text-[var(--muted)] mt-0.5">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {proposals.length === 0 ? (
         <div className="card p-12 text-center">

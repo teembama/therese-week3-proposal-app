@@ -23,8 +23,9 @@ Your output must be a JSON object with exactly these 6 keys:
 - "next_steps": How to proceed, invitation to discuss, and closing
 
 Rules:
+- CRITICAL: If any intake field contains nonsensical text, random characters, or gibberish (e.g. "asdfghjkl", "xxxyyy", keyboard mashing), DO NOT attempt to write a polished proposal around it. Instead, in each affected section, clearly state: "[This section cannot be completed — the input for [field name] appears to contain placeholder or invalid text. Please provide real details.]" Only write substantive proposal content for fields that contain meaningful information.
 - Use ONLY the information provided in the intake data. Do not fabricate details, statistics, case studies, or claims not present in the inputs.
-- If a field has sparse information, work with what's there. Do not invent specifics to fill gaps — instead, keep the section appropriately brief or note that details will be discussed further.
+- If a field has sparse but meaningful information, work with what's there. Do not invent specifics to fill gaps — instead, keep the section appropriately brief or note that details will be discussed further.
 - If supporting material is provided, incorporate relevant details from it naturally into the appropriate sections.
 - Write in a professional but warm tone. Use "we" for Koya Talent, "you" for the client.
 - Each section should be 2-4 paragraphs of prose. For deliverables, use a clear list format within the prose.

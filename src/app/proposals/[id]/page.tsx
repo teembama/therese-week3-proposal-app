@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -53,11 +53,11 @@ export default function ProposalDetailPage() {
   const canDeliver = status === "approved";
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--accent)] mb-1 inline-block">
+          <Link href="/" className="text-sm font-semibold text-[var(--accent)] hover:underline mb-1 inline-block">
             ← All Proposals
           </Link>
           <h1 className="text-2xl font-semibold">{proposal.company_name}</h1>
@@ -78,8 +78,13 @@ export default function ProposalDetailPage() {
         <div className="card p-4 mb-6 border-l-4 border-l-[var(--danger)]">
           <p className="text-sm font-medium text-[var(--danger)]">Rejected</p>
           <p className="text-sm text-[var(--muted)] mt-1">{proposal.rejection_reason}</p>
-          <p className="text-xs text-[var(--muted)] mt-2">You can edit the sections and resubmit for approval.</p>
+          <p className="text-xs text-[var(--muted)] mt-2">Edit the details or sections below and resubmit.</p>
         </div>
+      )}
+
+      {/* Edit intake details — recovery flow */}
+      {canEdit && (
+        <EditDetailsPanel proposal={proposal} onSave={fetchProposal} />
       )}
 
       {/* Generate button — if no sections yet */}
@@ -141,17 +146,6 @@ export default function ProposalDetailPage() {
           </div>
         )}
 
-        {/* PDF link — available for approved/sent */}
-        {["approved", "sent"].includes(status) && (
-          <a
-            href={`/api/proposals/${id}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block px-4 py-2 text-sm font-medium border border-[var(--surface-border)] rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            View Proposal as PDF
-          </a>
-        )}
       </div>
     </div>
   );
@@ -159,36 +153,201 @@ export default function ProposalDetailPage() {
 
 /* ---- Sub-components ---- */
 
+// Collapsible panel to edit the original intake fields
+function EditDetailsPanel({ proposal, onSave }: { proposal: Proposal; onSave: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    client_name: proposal.client_name,
+    client_email: proposal.client_email,
+    company_name: proposal.company_name,
+    date_of_call: proposal.date_of_call,
+    salesperson_name: proposal.salesperson_name,
+    client_needs_summary: proposal.client_needs_summary,
+    project_scope: proposal.project_scope,
+    goals_and_objectives: proposal.goals_and_objectives,
+    recommended_services: proposal.recommended_services,
+    proposed_timeline: proposal.proposed_timeline,
+    estimated_pricing: proposal.estimated_pricing,
+    supporting_material: proposal.supporting_material || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setSuccess(false);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      // Use a dedicated endpoint to update intake fields
+      const res = await fetch(`/api/proposals/${proposal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ intake: form }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSuccess(true);
+      onSave();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card mb-6">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full p-4 flex items-center justify-between text-sm font-medium hover:bg-gray-50 transition-colors rounded-lg"
+      >
+        <span>Edit Proposal Details</span>
+        <span className="text-[var(--muted)]">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 space-y-4 border-t border-[var(--surface-border)]">
+          <p className="text-xs text-[var(--muted)] pt-3">
+            Fix any input errors here, then save and regenerate the proposal.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <SmallField label="Client Name" name="client_name" value={form.client_name} onChange={handleChange} />
+            <SmallField label="Client Email" name="client_email" value={form.client_email} onChange={handleChange} />
+            <SmallField label="Company Name" name="company_name" value={form.company_name} onChange={handleChange} />
+            <SmallField label="Date of Call" name="date_of_call" type="date" value={form.date_of_call} onChange={handleChange} max={new Date().toISOString().split("T")[0]} />
+            <SmallField label="Salesperson" name="salesperson_name" value={form.salesperson_name} onChange={handleChange} />
+          </div>
+
+          <SmallTextArea label="Client's Needs" name="client_needs_summary" value={form.client_needs_summary} onChange={handleChange} />
+          <SmallTextArea label="Project Scope" name="project_scope" value={form.project_scope} onChange={handleChange} />
+          <SmallTextArea label="Goals & Objectives" name="goals_and_objectives" value={form.goals_and_objectives} onChange={handleChange} />
+          <SmallTextArea label="Recommended Services" name="recommended_services" value={form.recommended_services} onChange={handleChange} />
+          <SmallTextArea label="Timeline" name="proposed_timeline" value={form.proposed_timeline} onChange={handleChange} />
+          <SmallTextArea label="Pricing" name="estimated_pricing" value={form.estimated_pricing} onChange={handleChange} />
+          <SmallTextArea label="Supporting Material (optional)" name="supporting_material" value={form.supporting_material} onChange={handleChange} />
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            <button
+              onClick={() => setOpen(false)}
+              className="px-4 py-2 text-sm border border-[var(--surface-border)] rounded-lg hover:bg-gray-50"
+            >
+              Close
+            </button>
+            {success && <span className="text-xs text-[var(--success)]">Saved — now regenerate the proposal</span>}
+            {error && <span className="text-xs text-[var(--danger)]">{error}</span>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SmallField({ label, name, value, onChange, type = "text", max }: {
+  label: string; name: string; value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string; max?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[var(--muted)] mb-1">{label}</label>
+      <input name={name} type={type} value={value} onChange={onChange} max={max}
+        className="w-full px-2.5 py-1.5 text-sm rounded border border-[var(--surface-border)] focus:outline-none focus:ring-2 focus:ring-blue-100" />
+    </div>
+  );
+}
+
+function SmallTextArea({ label, name, value, onChange }: {
+  label: string; name: string; value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[var(--muted)] mb-1">{label}</label>
+      <textarea name={name} value={value} onChange={onChange} rows={2}
+        className="w-full px-2.5 py-1.5 text-sm rounded border border-[var(--surface-border)] focus:outline-none focus:ring-2 focus:ring-blue-100 resize-vertical" />
+    </div>
+  );
+}
+
 function GenerateButton({ id, onComplete, label = "Generate Proposal with AI" }: {
   id: string; onComplete: () => void; label?: string;
 }) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   async function handleGenerate() {
     setGenerating(true);
     setError(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      const res = await fetch(`/api/proposals/${id}/generate`, { method: "POST" });
+      const res = await fetch(`/api/proposals/${id}/generate`, {
+        method: "POST",
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || data.error);
       onComplete();
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Generation failed");
     } finally {
       setGenerating(false);
+      abortRef.current = null;
     }
+  }
+
+  function handleCancel() {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setGenerating(false);
   }
 
   return (
     <div className="mb-4">
-      <button
-        onClick={handleGenerate}
-        disabled={generating}
-        className="w-full py-3 bg-[var(--accent)] text-white font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-      >
-        {generating ? "Generating... (this takes 10-20 seconds)" : label}
-      </button>
+      {generating ? (
+        <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Generating... this takes 10-20 seconds
+            </div>
+            <button
+              onClick={handleCancel}
+              className="px-3 py-1 text-xs font-medium border border-blue-300 rounded hover:bg-blue-100 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={handleGenerate}
+          className="w-full py-3 bg-[var(--accent)] text-white font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+        >
+          {label}
+        </button>
+      )}
       {error && (
         <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-[var(--danger)]">
           <p className="font-medium">AI generation failed</p>
@@ -211,6 +370,7 @@ function SectionCard({ proposalId, sectionKey, content, canEdit, onUpdate }: {
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   async function handleSave() {
     setSaving(true);
@@ -235,11 +395,14 @@ function SectionCard({ proposalId, sectionKey, content, canEdit, onUpdate }: {
   async function handleRegenerate() {
     setRegenerating(true);
     setError(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const res = await fetch(`/api/proposals/${proposalId}/sections/${sectionKey}/regenerate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction: regenerateNote || undefined }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || data.error);
@@ -247,17 +410,27 @@ function SectionCard({ proposalId, sectionKey, content, canEdit, onUpdate }: {
       setRegenerateNote("");
       onUpdate();
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Regeneration failed");
     } finally {
       setRegenerating(false);
+      abortRef.current = null;
     }
+  }
+
+  function handleCancelRegenerate() {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setRegenerating(false);
   }
 
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-[var(--foreground)]">{SECTION_LABELS[sectionKey]}</h3>
-        {canEdit && !editing && (
+        {canEdit && !editing && !regenerating && (
           <div className="flex gap-2">
             <button
               onClick={() => { setEditing(true); setEditText(content); }}
@@ -307,23 +480,50 @@ function SectionCard({ proposalId, sectionKey, content, canEdit, onUpdate }: {
 
       {showRegenerate && canEdit && (
         <div className="mt-3 pt-3 border-t border-[var(--surface-border)]">
-          <label className="text-xs text-[var(--muted)] block mb-1.5">
-            Optional: tell the AI what to change
-          </label>
-          <textarea
-            value={regenerateNote}
-            onChange={(e) => setRegenerateNote(e.target.value)}
-            placeholder="e.g. Make it shorter, emphasize ROI, add more detail about phases..."
-            rows={2}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--surface-border)] focus:outline-none focus:ring-2 focus:ring-blue-100 resize-vertical"
-          />
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            className="mt-2 px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-white rounded hover:bg-[var(--accent-hover)] disabled:opacity-50"
-          >
-            {regenerating ? "Regenerating..." : "Regenerate This Section"}
-          </button>
+          {regenerating ? (
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
+              <div className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Regenerating section...
+              </div>
+              <button
+                onClick={handleCancelRegenerate}
+                className="px-3 py-1 text-xs font-medium border border-blue-300 rounded hover:bg-blue-100"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <>
+              <label className="text-xs text-[var(--muted)] block mb-1.5">
+                Optional: tell the AI what to change
+              </label>
+              <textarea
+                value={regenerateNote}
+                onChange={(e) => setRegenerateNote(e.target.value)}
+                placeholder="e.g. Make it shorter, emphasize ROI, add more detail about phases..."
+                rows={2}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--surface-border)] focus:outline-none focus:ring-2 focus:ring-blue-100 resize-vertical"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={handleRegenerate}
+                  className="px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-white rounded hover:bg-[var(--accent-hover)]"
+                >
+                  Regenerate This Section
+                </button>
+                <button
+                  onClick={() => { setShowRegenerate(false); setRegenerateNote(""); }}
+                  className="px-3 py-1.5 text-xs border border-[var(--surface-border)] rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -518,9 +718,7 @@ function DeliveryActions({ id, proposal, onComplete }: {
 
       <div className="flex gap-3">
         <a
-          href={`/api/proposals/${id}/pdf`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`/proposals/${id}/preview`}
           className="flex-1 py-2.5 text-center border border-[var(--surface-border)] font-medium rounded-lg hover:bg-gray-50 text-sm"
         >
           Export PDF

@@ -55,11 +55,18 @@ export function validateIntake(data: Record<string, unknown>): ValidationResult 
     errors.client_email = 'Client email must be a valid email address';
   }
 
-  // Date — must be a real date in YYYY-MM-DD format
+  // Date — must be a real date in YYYY-MM-DD format, not in the future
   if (!isNonBlank(data.date_of_call)) {
     errors.date_of_call = 'Date of call is required';
   } else if (!isValidDate(data.date_of_call as string)) {
     errors.date_of_call = 'Date of call must be a valid date (YYYY-MM-DD)';
+  } else {
+    const callDate = new Date(data.date_of_call + 'T00:00:00Z');
+    const today = new Date();
+    today.setUTCHours(23, 59, 59, 999); // end of today
+    if (callDate > today) {
+      errors.date_of_call = 'Date of call cannot be in the future — the call must have already happened';
+    }
   }
 
   return {

@@ -61,9 +61,9 @@ export interface Proposal extends ProposalIntake {
 
 // Status display metadata
 export const STATUS_CONFIG: Record<ProposalStatus, { label: string; color: string }> = {
-  draft: { label: 'Draft', color: '#6b7280' },
-  pending_approval: { label: 'Pending Approval', color: '#f59e0b' },
-  approved: { label: 'Approved', color: '#10b981' },
-  sent: { label: 'Sent to Client', color: '#3b82f6' },
-  rejected: { label: 'Rejected', color: '#ef4444' },
+  draft: { label: 'Draft', color: '#7a7668' },
+  pending_approval: { label: 'Pending Approval', color: '#b08d23' },
+  approved: { label: 'Approved', color: '#2d6a4f' },
+  sent: { label: 'Sent to Client', color: '#1a5276' },
+  rejected: { label: 'Rejected', color: '#b33a3a' },
 };

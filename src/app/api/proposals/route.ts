@@ -27,6 +27,7 @@ export async function GET() {
 }
 
 // POST /api/proposals — create a new proposal from intake form
+// Optionally accepts generated_sections to save intake + AI output in one write
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
         proposed_timeline: body.proposed_timeline.trim(),
         estimated_pricing: body.estimated_pricing.trim(),
         supporting_material: body.supporting_material?.trim() || null,
+        generated_sections: body.generated_sections || null,
         status: 'draft',
       })
       .select('id')
