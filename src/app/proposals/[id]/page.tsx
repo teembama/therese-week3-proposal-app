@@ -87,10 +87,10 @@ export default function ProposalDetailPage() {
         <EditDetailsPanel proposal={proposal} onSave={fetchProposal} />
       )}
 
-            {/* Regen counter */}
+      {/* Per-section regen info */}
       {proposal.generated_sections && canEdit && (
         <p className="text-xs text-[var(--muted)]">
-          AI regenerations: {proposal.regen_count || 0}/3 used
+            Each section can be regenerated up to 3 times
         </p>
       )}
 

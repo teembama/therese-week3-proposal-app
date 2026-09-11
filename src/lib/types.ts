@@ -58,6 +58,7 @@ export interface Proposal extends ProposalIntake {
   created_at: string;
   updated_at: string;
   regen_count: number;
+    section_regen_counts: Record<string, number> | null;
 }
 
 // Status display metadata
